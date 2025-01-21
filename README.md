@@ -55,4 +55,7 @@ After all epochs are completed, model weights are saved and further analysis bas
 
 
 ## Next steps
-Performance of the model on 2D slices alone has been unimpressive, and it is unlikely that 2D slices alone contain enough information to diagnose SVP. Next steps include creating a 3D model to incorporate more of the heart's structures in the prediction, improving data augmentation, and including relevant metrics derived from automated segmentations such as ventricular volumes, ejection fraction, and myocardial mass. 
+Performance of the model on 2D slices alone has been unimpressive, and it is unlikely that 2D slices alone contain enough information to diagnose SVP. Next steps include:  
+- creating a 3D model to incorporate more of the heart's structures in the prediction
+- improving data augmentation (do all permutations of augmentation instead of random)
+- including relevant metrics derived from automated segmentations such as ventricular volumes, ejection fraction, and myocardial mass
