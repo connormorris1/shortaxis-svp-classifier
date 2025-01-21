@@ -44,5 +44,15 @@ Training is done on each 2D slice from each scan. In the future, a 3D model will
 - Models are evaluated by writing evaluation metrics (loss, AUROC, accuracy, precision, specificity, sensitivity) of training and validation sets to Weights and Biases during training.  
 After all epochs are completed, model weights are saved and further analysis based on patient ID, z-axis of the imaging slices, or time stamps using the gen_analysis_csv.py script.  
 
+## Results
+![image](https://github.com/user-attachments/assets/d412c107-73a3-45e1-bf04-2b4255953844)
+
+![image](https://github.com/user-attachments/assets/1e487f70-ccbb-456d-b780-9239a0ab2486)
+
+![image](https://github.com/user-attachments/assets/c0aeff51-d6c7-48f5-b2e4-0ab7a443af9e)
+
+![image](https://github.com/user-attachments/assets/9eecb5b0-d8c5-4ff4-ad12-a18ea1949526)
+
+
 ## Next steps
 Performance of the model on 2D slices alone has been unimpressive, and it is unlikely that 2D slices alone contain enough information to diagnose SVP. Next steps include creating a 3D model to incorporate more of the heart's structures in the prediction, improving data augmentation, and including relevant metrics derived from automated segmentations such as ventricular volumes, ejection fraction, and myocardial mass. 
