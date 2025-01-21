@@ -1,0 +1,8 @@
+# Name                    Version                   Build  Channel
+pandas                    2.1.4           py310h1128e8f_0  
+pydicom                   2.3.1              pyh1a96a4e_0    conda-forge
+scikit-image              0.24.0          py310h1128e8f_0    anaconda
+scikit-learn              1.5.2           py310h27f47ee_1    conda-forge
+scipy                     1.14.1          py310hfcf56fc_1    conda-forge
+torchio                   0.20.2           pypyhff848c3_0    conda-forge
+wandb                     0.16.3             pyhd8ed1ab_0    conda-forge
