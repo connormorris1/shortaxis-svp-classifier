@@ -90,10 +90,7 @@ def balance_labels(labels_df):
 
 # Takes a path to a 2D dicom file and converts it to a tensor (with dimensions interp_resolution x interp_resolution)
 def dicom_path_to_tensor(img_path,target_dim):
-    # Load all dicom files into a list given the img_path
-    #dicoms = [pydicom.dcmread(img_path + file) for file in os.listdir(img_path) if os.path.isfile(img_path + file)]
-
-    # Load image dicom and conver to tensor
+    # Load image dicom and pre-process into tensor for input into model
     dicom = dcmread(img_path)
     array = dicom.pixel_array
     #rescale to 1mmx1mm pixel size - not working currently
@@ -103,7 +100,10 @@ def dicom_path_to_tensor(img_path,target_dim):
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Pad((int(np.ceil(max(target_dim-array.shape[0],0)/2)),int(np.ceil(max(target_dim-array.shape[1],0)/2)))), #can add rotation/flipping here
-        transforms.CenterCrop((target_dim,target_dim))
+        transforms.CenterCrop((target_dim,target_dim)),
+        transforms.RandomRotation(degrees=(0,180)), #transforms copied from https://www.sciencedirect.com/science/article/pii/S1097664723003320?via%3Dihub, but instead of random transforms they did all permutations on each image
+        transforms.RandomHorizontalFlip(p=0.5),
+        transforms.RandomVerticalFlip(p=0.5)
     ])
     array = transform(array)
     array = (array - torch.mean(array)) / torch.std(array) #normalize
