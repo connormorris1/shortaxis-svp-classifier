@@ -7,11 +7,14 @@ import wandb
 import argparse
 from accessory_functions import CustomImageDataset, train_loop, test_loop
 from models import resnet18, resnet34, resnet50, vgg11
+import random
+import os
 
 ############################################################################
 parser = argparse.ArgumentParser(description='Begin training runs')
-parser.add_argument('--labels_train',type=str,required=True,help='path to training labels')
-parser.add_argument('--labels_test', type=str,required=True,help='path to testing labels')
+parser.add_argument('--normal_path',type=str,required=True,help='path to normal examples')
+parser.add_argument('--svp_path', type=str,required=True,help='path to svp examples')
+parser.add_argument('--fold', type=int,required=True,choices=[0,1,2,3],help='Fold number (0-3)')
 parser.add_argument('--resolution', type=int,default=224,help='resolution to resize images to')
 parser.add_argument('--batch_size', type=int,default=50,help='batch size')
 parser.add_argument('--epochs', type=int,default=3,help='number of epochs')
@@ -28,8 +31,9 @@ args = parser.parse_args()
 
 # Path to directory containing dicom files
 # Expected format of these files: csv files where each line is path_to_dicom, label
-labels_train = args.labels_train
-labels_test = args.labels_test
+normal_path = args.normal_path
+svp_path = args.svp_path
+fold_num = args.fold
 interp_resolution = args.resolution # Resnets expect a 224x224 image
 dataset_balancing_method = args.dataset_balancing
 
@@ -42,7 +46,7 @@ learning_rate = args.learning_rate
 print(f'Learning rate: {learning_rate}')
 num_epochs = args.epochs
 print(f'Epochs: {num_epochs}')
-print(f'Dataset balancing method: {args.dataset_balancing}')
+print(f'Dataset balancing method: {dataset_balancing_method}')
 
 pretrained = args.pretrained # Set this to True if you want to use the pretrained version
 # dropout = args.dropout # Note: The foundation model always has dropout
@@ -57,8 +61,64 @@ if dataset_balancing_method == 'oversampling':
     oversample = True
 else:
     oversample = False
-train_dataloader = DataLoader(CustomImageDataset(labels_train, interp_resolution, oversample), batch_size=batch_num)
-test_dataloader = DataLoader(CustomImageDataset(labels_test, interp_resolution, False), batch_size=batch_num)
+
+normal_pids = [] #will be list of full paths to all pid directories
+for pid in os.listdir(normal_path):
+    normal_pids.append(os.path.join(normal_path,pid))
+svp_pids = [] #will be list of full paths to all pid directories
+for pid in os.listdir(svp_path):
+    svp_pids.append(os.path.join(svp_path,pid))
+random.seed(10)
+test_svp_pids = random.sample(svp_pids,6) #each PID should be a full path to that PID directory
+test_normal_pids = random.sample(normal_pids,9)
+notest_normal_pids = list(set(normal_pids) - set(test_normal_pids))
+notest_svp_pids = list(set(svp_pids) - set(test_svp_pids))
+random.shuffle(notest_normal_pids)
+random.shuffle(notest_svp_pids)
+svp_folds = []
+normal_folds = []
+svp_fold_size = len(notest_svp_pids) // 4
+normal_fold_size = len(notest_normal_pids) // 4
+for i in range(4):
+    if i != 3:
+        svp_folds.append(notest_svp_pids[i*svp_fold_size:(i+1)*svp_fold_size])
+        normal_folds.append(notest_normal_pids[i*normal_fold_size:(i+1)*normal_fold_size])
+    elif i == 3:
+        svp_folds.append(notest_svp_pids[i*svp_fold_size:])
+        normal_folds.append(notest_normal_pids[i*normal_fold_size:])
+
+val_fold = svp_folds.pop(fold_num)
+val_fold_labels = [1]*len(val_fold)
+normal_val_fold = normal_folds.pop(fold_num)
+val_fold.extend(normal_val_fold)
+val_fold_labels.extend([0]*len(normal_val_fold))
+
+train_fold = []
+train_fold_labels = []
+for sublist in svp_folds:
+    for pid_path in sublist:
+        train_fold.append(pid_path)
+        train_fold_labels.append(1)
+for sublist in normal_folds:
+    for pid_path in sublist:
+        train_fold.append(pid_path)
+        train_fold_labels.append(0)
+
+#shuffle order of training and validation folds
+paired_val_folds = list(zip(val_fold,val_fold_labels))
+random.shuffle(paired_val_folds)
+val_fold,val_fold_labels = zip(*paired_val_folds)
+val_fold = list(val_fold)
+val_fold_labels = list(val_fold_labels)
+
+paired_train_folds = list(zip(train_fold,train_fold_labels))
+random.shuffle(paired_train_folds)
+train_fold,train_fold_labels = zip(*paired_train_folds)
+train_fold = list(train_fold)
+train_fold_labels = list(train_fold_labels)
+
+train_dataloader = DataLoader(CustomImageDataset(train_fold,train_fold_labels interp_resolution, oversample), batch_size=batch_num)
+val_dataloader = DataLoader(CustomImageDataset(val_fold, val_fold_labels, False), batch_size=batch_num)
 
 # Uses GPU or Mac backend if available, otherwise use CPU
 # This code obtained from official pytorch docs
@@ -79,7 +139,7 @@ elif architecture == 'resnet34':
 elif architecture == 'resnet50':
     model = resnet50(pretrained=pretrained)
 elif architecture == 'vgg11':
-    model = resnet50(pretrained=pretrained)
+    model = vgg11(pretrained=pretrained)
 
 #move model to GPU
 model = model.to(device)
@@ -87,9 +147,8 @@ model = model.to(device)
 #Initialize loss 
 if dataset_balancing_method == 'loss_weighting':
     #calculate ratio of positive to negative examples for loss weighting
-    training_df = pd.read_csv(labels_train,header=None)
-    num_pos = len(training_df[training_df[1] == 1])
-    num_neg = len(training_df[training_df[1] == 0])
+    num_pos = sum(train_fold_labels)
+    num_neg = len(train_fold_labels) - num_pos
     pos_weight = torch.tensor([num_neg / num_pos]).to(device)
     criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight) #weight positive examples higher than negative examples since there are fewer positive examples in dataset
 else:
@@ -120,7 +179,7 @@ for i in range(0, num_epochs):
     epoch_start_time = time.time()
 
     train_loop(train_dataloader, model, criterion, device, optimizer)
-    test_loop(test_dataloader, model, criterion, device)
+    test_loop(val_dataloader, model, criterion, device)
 
     elapsed_time = time.time() - epoch_start_time
     print("Epoch " + str(i + 1) + " complete at " + str(elapsed_time) + " seconds")

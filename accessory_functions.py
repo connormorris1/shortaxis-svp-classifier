@@ -9,6 +9,7 @@ import numpy as np
 from torchvision import transforms
 from sklearn.metrics import roc_auc_score, precision_score, recall_score, accuracy_score
 import wandb
+import os
 import sys
 
 # This function takes in a data frame of image, labels with predominantly one label
@@ -106,27 +107,34 @@ def dicom_path_to_tensor(img_path,target_dim):
         transforms.RandomVerticalFlip(p=0.5)
     ])
     array = transform(array)
-    array = (array - torch.mean(array)) / torch.std(array) #normalize
+    array = (array - torch.mean(array)) / torch.std(array) #normalize - modify to normalize based on dataset mean/std, not each individual image's
     return array
 
 
 # Based on tutorial from PyTorch website https://pytorch.org/tutorials/beginner/basics/data_tutorial.html
 class CustomImageDataset(Dataset):
-    # annotations_file is a path to a csv file with the DICOM folder name, label
-    # img_dir is path to folder containing all image folders, each with a collection of dicom images
-    # set balance to True if you want to balance the positive and negative labels
-    def __init__(self, annotations_file, target_dim=224, balance=False, transform=None, target_transform=None,file_is_df=False):
-
-        # Note here we need to balance the positive and negative labels if train data
-        if balance:
-            self.img_labels = balance_labels(pd.read_csv(annotations_file, header=None))
-        elif file_is_df:
-            self.img_labels = annotations_file
-        else:
-            self.img_labels = pd.read_csv(annotations_file, header=None)
-
-        self.transform = transform
-        self.target_transform = target_transform
+    # directory structure is: 
+    # label
+    # ---pid
+    # ------date/title
+    # ---------sequences (are each of this unique runs, or are they organized by z-axis/time stamp? )
+    # all the examples in the given folder for training should have the same label
+    # paths should contain the path to all the relevant PID folders
+    # set balance to True if you want to use oversampling balance the positive and negative labels
+    def __init__(self, pids, labels, target_dim=224, balance=False):
+        # if balance:
+        #     self.img_labels = balance_labels(pd.read_csv(annotations_file, header=None)) # this won't work anymore
+        self.all_paths = []
+        self.all_labels = []
+        for i,pid_path in enumerate(pids):
+            date_paths = os.listdir(pid_path)
+            pid_date_path = os.path.join(pid_path,date_paths)
+                for sequence in os.listdir(pid_date_path):
+                    seq_path = os.path.join(pid_date_path,sequence)
+                    for dcm in os.listdir(seq_path):
+                        dcm_path = os.path.join(seq_path,dcm)
+                        self.all_paths.append(dcm_path)
+                        self.all_labels.append(labels[i])
         self.target_dimensions = target_dim # Note we should keep this at 224x224 since that is what ResNet is built for/trained on
 
     def __len__(self):
@@ -136,14 +144,9 @@ class CustomImageDataset(Dataset):
     # interpolates to a given size, and returns image tensor and label
     def __getitem__(self, idx):
         #img_path = os.path.join(self.img_dir, self.img_labels.iloc[idx, 0])
-        img_path = self.img_labels.iloc[idx, 0]
+        img_path = self.all_paths[idx]
         image = dicom_path_to_tensor(img_path,self.target_dimensions)
-        label = self.img_labels.iloc[idx, 1]
-        if self.transform:
-            image = self.transform(image)
-        if self.target_transform:
-            label = self.target_transform(label)
-        return image, torch.tensor([label],dtype=torch.float32)
+        return image, torch.tensor([self.all_labels[idx]],dtype=torch.float32)
 
 
 def train_loop(dataloader, model, loss_fn, device, optimizer):
