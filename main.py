@@ -6,7 +6,7 @@ import time
 import wandb
 import argparse
 from accessory_functions import CustomImageDataset, train_loop, test_loop
-from models import resnet18, resnet34, resnet50
+from models import resnet18, resnet34, resnet50, vgg11
 
 ############################################################################
 parser = argparse.ArgumentParser(description='Begin training runs')
@@ -19,7 +19,7 @@ parser.add_argument('--save_model_path', type=str,help='path to save model to, s
 parser.add_argument('--run_name', type=str,help='Run name in WandB',required=True)
 parser.add_argument('--wandb_key',type=str,help='Path to file containing WandB login key.',required=True)
 parser.add_argument('--pretrained', action='store_true',help='Use pretrained resnet model')
-parser.add_argument('--architecture', type=str,choices=['resnet18','resnet34','resnet50'],default='resnet18',help='Which ResNet architecture to use')
+parser.add_argument('--architecture', type=str,choices=['resnet18','resnet34','resnet50','vgg11'],default='resnet18',help='Which architecture to use')
 parser.add_argument('--device',type=int,required=True,help='Cuda GPU ID')
 parser.add_argument('--learning_rate',type=float,default=0.0001,help='Sets learning rate')
 parser.add_argument('--dataset_balancing',type=str,choices=['loss_weighting','oversampling'],default='loss_weighting',help='Choose method for correcting dataset imbalance.')
@@ -77,6 +77,8 @@ if architecture == 'resnet18':
 elif architecture == 'resnet34':
     model = resnet34(pretrained=pretrained)
 elif architecture == 'resnet50':
+    model = resnet50(pretrained=pretrained)
+elif architecture == 'vgg11':
     model = resnet50(pretrained=pretrained)
 
 #move model to GPU
