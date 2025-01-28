@@ -128,17 +128,24 @@ class CustomImageDataset(Dataset):
         self.all_labels = []
         for i,pid_path in enumerate(pids):
             date_paths = os.listdir(pid_path)
-            pid_date_path = os.path.join(pid_path,date_paths)
+            for date_path in date_paths:
+                pid_date_path = os.path.join(pid_path,date_path)
                 for sequence in os.listdir(pid_date_path):
                     seq_path = os.path.join(pid_date_path,sequence)
                     for dcm in os.listdir(seq_path):
                         dcm_path = os.path.join(seq_path,dcm)
                         self.all_paths.append(dcm_path)
                         self.all_labels.append(labels[i])
+        #shuffle order of paths and labels together folds
+        paired_paths_labels = list(zip(self.all_paths,self.all_labels))
+        random.shuffle(paired_paths_labels)
+        all_paths,all_labels = zip(*paired_paths_labels)
+        self.all_paths = list(all_paths)
+        self.all_labels = list(all_labels)
         self.target_dimensions = target_dim # Note we should keep this at 224x224 since that is what ResNet is built for/trained on
 
     def __len__(self):
-        return len(self.img_labels)
+        return len(self.all_paths)
 
     # Loads the dicoms and label of a given MRI, converts DICOMS into a 3Dntensor,
     # interpolates to a given size, and returns image tensor and label

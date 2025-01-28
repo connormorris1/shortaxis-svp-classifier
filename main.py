@@ -41,6 +41,7 @@ print(f'Run name: {args.run_name}')
 save_model_path = args.save_model_path
 print(f'Save model path: {save_model_path}')
 batch_num = args.batch_size # Batch size
+print(f'Fold number: {fold_num}')
 print(f'Batch size: {batch_num}')
 learning_rate = args.learning_rate
 print(f'Learning rate: {learning_rate}')
@@ -117,7 +118,7 @@ train_fold,train_fold_labels = zip(*paired_train_folds)
 train_fold = list(train_fold)
 train_fold_labels = list(train_fold_labels)
 
-train_dataloader = DataLoader(CustomImageDataset(train_fold,train_fold_labels interp_resolution, oversample), batch_size=batch_num)
+train_dataloader = DataLoader(CustomImageDataset(train_fold, train_fold_labels, interp_resolution, oversample), batch_size=batch_num)
 val_dataloader = DataLoader(CustomImageDataset(val_fold, val_fold_labels, False), batch_size=batch_num)
 
 # Uses GPU or Mac backend if available, otherwise use CPU
