@@ -227,7 +227,6 @@ def test_loop(dataloader, model, loss_fn, device):
     # also serves to reduce unnecessary gradient computations and memory usage for tensors with requires_grad=True
     with torch.no_grad():
         for (X, y) in dataloader:
-
             # First move X and y to GPU
             X = X.to(device)
             y = y.to(device)
