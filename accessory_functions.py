@@ -248,5 +248,5 @@ def test_loop(dataloader, model, loss_fn, device):
     specificity = recall_score(all_y,all_pred,pos_label=0)
     print(f"Test Error: \n   Accuracy: {accuracy:>0.3f}\n   recall: {recall:>0.3f}\n   specificity: {specificity:>0.3f}\n   precision: {precision:>0.3f}\n   AUC: {auc:>0.3f}\n   Avg loss: {test_loss:>8f} \n")
     wandb.log({'test_loss': test_loss,"test_acc":accuracy,"test_precision":precision,"test_recall":recall,"test_specificity":specificity,"test_auc":auc})
-    return all_pred, all_y
+    return auc
        

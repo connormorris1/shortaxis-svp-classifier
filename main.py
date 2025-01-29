@@ -174,20 +174,20 @@ run = wandb.init(project='sax-svp-classifier',
 
 # Timer
 start_time = time.time()
-
+best_auc = 0
 # Training loop
 for i in range(0, num_epochs):
     epoch_start_time = time.time()
 
     train_loop(train_dataloader, model, criterion, device, optimizer)
-    test_loop(val_dataloader, model, criterion, device)
+    test_auc = test_loop(val_dataloader, model, criterion, device)
+    if test_auc > best_auc:
+        best_auc = test_auc
+        print(f'Saving model at epoch {i} with validation AUC of {best_auc}')
+        torch.save(model.state_dict(), save_model_path)
 
     elapsed_time = time.time() - epoch_start_time
     print("Epoch " + str(i + 1) + " complete at " + str(elapsed_time) + " seconds")
 
 elapsed_time = time.time() - start_time
 print('Total time: ' + str(elapsed_time) + ' seconds')
-
-# Save our model
-# See this tutorial for how to load our model: https://pytorch.org/tutorials/beginner/basics/saveloadrun_tutorial.html
-torch.save(model.state_dict(), save_model_path)
