@@ -202,7 +202,6 @@ def train_loop(dataloader, model, loss_fn, device, optimizer):
                 train_loss = current_loss/(batch + 1)
                 print(f"Batch: [{batch+1:>5d}/{len(dataloader):>5d}]")
                 print(f"Train Error: \n   Accuracy: {accuracy:>0.3f}\n   recall: {recall:>0.3f}\n   specificity: {specificity:>0.3f}\n   precision: {precision:>0.3f}\n   AUC: {auc:>0.3f}\n   Avg loss: {train_loss:>8f} \n")
-                wandb.log({'train_loss':train_loss})
                 wandb.log({'train_loss': train_loss,"train_acc":accuracy,"train_precision":precision,"train_recall":recall,"train_specificity":specificity,"train_auc":auc})
             except:
                 print('ERROR! see error_y.txt and error_pred_proba.txt')
