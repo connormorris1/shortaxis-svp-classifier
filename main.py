@@ -118,8 +118,8 @@ train_fold,train_fold_labels = zip(*paired_train_folds)
 train_fold = list(train_fold)
 train_fold_labels = list(train_fold_labels)
 
-train_dataloader = DataLoader(CustomImageDataset(train_fold, train_fold_labels, interp_resolution, oversample), batch_size=batch_num)
-val_dataloader = DataLoader(CustomImageDataset(val_fold, val_fold_labels, False), batch_size=batch_num)
+train_dataloader = DataLoader(CustomImageDataset(train_fold, train_fold_labels, True, interp_resolution, oversample), batch_size=batch_num)
+val_dataloader = DataLoader(CustomImageDataset(val_fold, val_fold_labels, False, interp_resolution, False), batch_size=batch_num)
 
 # Uses GPU or Mac backend if available, otherwise use CPU
 # This code obtained from official pytorch docs
