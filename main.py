@@ -134,13 +134,13 @@ print(f"Using {device} device")
 
 # Use a Resnet model (pretrained or not depending on user input)
 if architecture == 'resnet18':
-    model = resnet18(pretrained=pretrained)
+    model = resnet18(pretrained=pretrained,num_channels=5)
 elif architecture == 'resnet34':
-    model = resnet34(pretrained=pretrained)
+    model = resnet34(pretrained=pretrained,num_channels=5)
 elif architecture == 'resnet50':
-    model = resnet50(pretrained=pretrained)
+    model = resnet50(pretrained=pretrained,num_channels=5)
 elif architecture == 'vgg11':
-    model = vgg11(pretrained=pretrained)
+    model = vgg11(pretrained=pretrained,num_channels=5)
 
 #move model to GPU
 model = model.to(device)
@@ -183,7 +183,7 @@ for i in range(0, num_epochs):
     test_auc = test_loop(val_dataloader, model, criterion, device)
     if test_auc > best_auc:
         best_auc = test_auc
-        print(f'Saving model at epoch {i} with validation AUC of {best_auc}')
+        print(f'Saving model at epoch {i+1} with validation AUC of {best_auc}')
         torch.save(model.state_dict(), save_model_path)
 
     elapsed_time = time.time() - epoch_start_time
