@@ -148,8 +148,9 @@ model = model.to(device)
 #Initialize loss 
 if dataset_balancing_method == 'loss_weighting':
     #calculate ratio of positive to negative examples for loss weighting
-    num_pos = sum(train_fold_labels)
-    num_neg = len(train_fold_labels) - num_pos
+    total_training_examples = sum(len(batch) for batch in train_dataloader)
+    num_pos = sum(labels.sum().item() for _, labels in train_dataloader)
+    num_neg = total_training_examples - num_pos
     pos_weight = torch.tensor([num_neg / num_pos]).to(device)
     criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight) #weight positive examples higher than negative examples since there are fewer positive examples in dataset
 else:
