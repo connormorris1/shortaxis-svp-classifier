@@ -16,6 +16,7 @@ parser = argparse.ArgumentParser(description='Generate CSVs to further analyze d
 parser.add_argument('--base_path', type=str, required=True, help='path to parent directory of dataset')
 parser.add_argument('--model', type=str,choices=['vgg11','resnet18','resnet34','resnet50'],required=True,help='Which model architecture to use')
 parser.add_argument('--model_weights', type=str,required=True,help='Path to trained model weights')
+parser.add_argument('--num_channels', type=int,required=False,default=2,help='Number of channels to include.')
 parser.add_argument('--save_path', type=str,help='path to save dataset to',required=True)
 args = parser.parse_args()
 
