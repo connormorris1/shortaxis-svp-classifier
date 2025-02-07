@@ -11,8 +11,8 @@ import argparse
 #save score dfs
 
 parser = argparse.ArgumentParser(description='Generate CSVs to further analyze data')
-parser.add_argument('--data_path', type=str, required=True, help='path to test set csv')
-parser.add_argument('--model', type=str,choices=['resnet18','resnet34','resnet50'],required=True,help='Which model architecture to use')
+parser.add_argument('--data_path', type=str, required=True, help='path to test set csv') #will need to modify this part to get proper test set examples
+parser.add_argument('--model', type=str,choices=['vgg11','resnet18','resnet34','resnet50'],required=True,help='Which model architecture to use')
 parser.add_argument('--model_weights', type=str,required=True,help='Path to trained model weights')
 parser.add_argument('--save_path', type=str,help='path to save dataset to',required=True)
 
@@ -21,11 +21,13 @@ args = parser.parse_args()
 dataset_path = args.data_path
 df = pd.read_csv(dataset_path,header=None)
 if args.model == 'resnet18':
-    model = models.resnet18()
+    model = models.resnet18(num_channels=5)
 elif args.model == 'resnet34':
-    model = models.resnet34()
+    model = models.resnet34(num_channels=5)
 elif args.model == 'resnet50':
-    model = models.resnet50()
+    model = models.resnet50(num_channels=5)
+elif args.model == 'vgg11':
+    model = models.vgg11(num_channels=5)
 model.load_state_dict(torch.load(args.model_weights))
 model.eval()
 all_z_axis = []
