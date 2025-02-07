@@ -109,8 +109,8 @@ def dicom_path_to_tensor3d(img_path,target_dim,train=True):
         ])
         array = transform(array)
         img.append(array)
-    img = torch.stack(img) # (5x1x224x224)
-    img = img.squeeze() # (5x224x224)
+    img = torch.stack(img) # (2x1x224x224)
+    img = img.squeeze() # (2x224x224)
     return img
 
 
@@ -151,7 +151,7 @@ class CustomImageDataset(Dataset):
         for date_path in date_paths:
             pid_date_path = os.path.join(pid_path,date_path)
             num_locs = len(os.listdir(pid_date_path))
-            if num_locs < 5: #skip image if there is not enough z-axis locations (5 here)
+            if num_locs < 2: #skip image if there is not enough z-axis locations (2 here)
                 self.num_skipped += 1
                 continue
             all_sequences = os.listdir(pid_date_path)
@@ -179,7 +179,7 @@ class CustomImageDataset(Dataset):
                 remove_indexes = [i for i,num in enumerate(num_times) if num != mode_time]
                 all_sequences = [seq for i,seq in enumerate(all_sequences) if i not in remove_indexes]
                 all_locs = [loc for i,loc in enumerate(all_locs) if i not in remove_indexes]
-                if len(all_locs) < 5: #check again that we have enough z-axis coordinates after filtering
+                if len(all_locs) < 2: #check again that we have enough z-axis coordinates after filtering
                     self.num_skipped += 1
                     continue
             #sort sequences according to loc
@@ -188,34 +188,43 @@ class CustomImageDataset(Dataset):
             all_locs, all_sequences = zip(*sorted_combined_list)
             all_locs = list(all_locs)
             all_sequences = list(all_sequences)
-            #grab 5 slices distributed approximately evenly throughout volume
-            keep_indices = [0,len(all_sequences)//3,len(all_sequences)//2,len(all_sequences)*2//3,-1]
-            keep_sequences = []
-            for i in keep_indices:
-                keep_sequences.append(all_sequences[i])
-            #create image stacks of 5 locs at all time points
-            final_paths = []
-            for sequence in keep_sequences:
-                seq_path = os.path.join(pid_date_path,sequence)
-                all_times = []
-                all_paths = []
-                for dcm in os.listdir(seq_path):
-                    dcm_path = os.path.join(seq_path,dcm)
-                    dcm = dcmread(dcm_path)
-                    time = float(dcm.TriggerTime)
-                    all_times.append(time)
-                    all_paths.append(dcm_path)
-                combined_list = list(zip(all_times,all_paths))
-                sorted_combined_list = sorted(combined_list)
-                all_times, all_paths = zip(*sorted_combined_list)
-                all_times = list(all_times)
-                all_paths = list(all_paths) # list of paths for dicoms at all time points at certain z-axis
-                final_paths.append(all_paths) # list of 5 lists of dicoms at all time points at certain z-axis
-            final_paths = np.array(final_paths).T.tolist() #list with all time points where each element contains 5 paths to dicom files sorted by z-axis from small to large
-            image_paths.extend(final_paths)
+            #grab all permutations of 2 slices from each 'volume'
+            for i in range(len(all_sequences)):
+                for j in range(i+1,len(all_sequences)):
+                    seq_path_1 = os.path.join(pid_date_path,all_sequences[i])
+                    seq_path_2 = os.path.join(pid_date_path,all_sequences[j])
+                    #sort sequences according to time
+                    all_times_1 = []
+                    all_paths_1 = []
+                    for dcm in os.listdir(seq_path_1):
+                        dcm_path = os.path.join(seq_path_1,dcm)
+                        dcm = dcmread(dcm_path)
+                        time = float(dcm.TriggerTime)
+                        all_times_1.append(time)
+                        all_paths_1.append(dcm_path)
+                    combined_list = list(zip(all_times_1,all_paths_1))
+                    sorted_combined_list = sorted(combined_list)
+                    all_times, all_paths = zip(*sorted_combined_list)
+                    all_times_1 = list(all_times)
+                    all_paths_1 = list(all_paths) # sorted list of paths for dicoms at all time points at certain z-axis
+                    all_times_2 = []
+                    all_paths_2 = []
+                    for dcm in os.listdir(seq_path_2):
+                        dcm_path = os.path.join(seq_path_2,dcm)
+                        dcm = dcmread(dcm_path)
+                        time = float(dcm.TriggerTime)
+                        all_times_2.append(time)
+                        all_paths_2.append(dcm_path)
+                    combined_list = list(zip(all_times_2,all_paths_2))
+                    sorted_combined_list = sorted(combined_list)
+                    all_times, all_paths = zip(*sorted_combined_list)
+                    all_times_2 = list(all_times)
+                    all_paths_2 = list(all_paths) # list of paths for dicoms at all time points at certain z-axis
+                    for k in range(len(all_paths_1)):
+                        image_paths.append([os.path.join(seq_path_1,all_paths_1[k]),os.path.join(seq_path_2,all_paths_2[k])])
         #list shape check, can delete if functions properly TESTING
         for img in image_paths:
-            if len(img) != 5:
+            if len(img) != 2:
                 print(f"Improper image length of: {len(img)}")
                 print(img)
         return image_paths

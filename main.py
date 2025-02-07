@@ -134,13 +134,13 @@ print(f"Using {device} device")
 
 # Use a Resnet model (pretrained or not depending on user input)
 if architecture == 'resnet18':
-    model = resnet18(pretrained=pretrained,num_channels=5)
+    model = resnet18(pretrained=pretrained,num_channels=2)
 elif architecture == 'resnet34':
-    model = resnet34(pretrained=pretrained,num_channels=5)
+    model = resnet34(pretrained=pretrained,num_channels=2)
 elif architecture == 'resnet50':
-    model = resnet50(pretrained=pretrained,num_channels=5)
+    model = resnet50(pretrained=pretrained,num_channels=2)
 elif architecture == 'vgg11':
-    model = vgg11(pretrained=pretrained,num_channels=5)
+    model = vgg11(pretrained=pretrained,num_channels=2)
 
 #move model to GPU
 model = model.to(device)
