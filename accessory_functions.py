@@ -135,6 +135,8 @@ class CustomImageDataset(Dataset):
             self.all_paths.extend(pt_images)
             self.all_labels.extend([labels[i]]*len(pt_images))
         print(f"Number skipped: {self.num_skipped}")
+        if balance:
+            self.balance_dataset()
         #shuffle order of paths and labels together
         paired_paths_labels = list(zip(self.all_paths,self.all_labels))
         random.shuffle(paired_paths_labels)
@@ -143,6 +145,21 @@ class CustomImageDataset(Dataset):
         self.all_labels = list(all_labels)
         self.train = train #store whether this is a training set or a validation/test set
         self.target_dimensions = target_dim # Note we should keep this at 224x224 since that is what ResNet is built for/trained on
+
+    def balance_dataset(self):
+        positive_paths = [path for path, label in zip(self.all_paths, self.all_labels) if label == 1]
+        negative_paths = [path for path, label in zip(self.all_paths, self.all_labels) if label == 0]
+        
+        num_positive = len(positive_paths)
+        num_negative = len(negative_paths)
+        
+        if num_positive < num_negative:
+            positive_paths = positive_paths * (num_negative // num_positive) + positive_paths[:num_negative % num_positive]
+        elif num_negative < num_positive:
+            negative_paths = negative_paths * (num_positive // num_negative) + negative_paths[:num_positive % num_negative]
+        
+        self.all_paths = positive_paths + negative_paths
+        self.all_labels = [1] * len(positive_paths) + [0] * len(negative_paths)
     
     def get_images(self,pid_path):
         #write function that based on patient ID path returns all 3d image stacks
