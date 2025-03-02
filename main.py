@@ -26,6 +26,7 @@ parser.add_argument('--architecture', type=str,choices=['resnet18','resnet34','r
 parser.add_argument('--device',type=int,required=True,help='Cuda GPU ID')
 parser.add_argument('--learning_rate',type=float,default=0.0001,help='Sets learning rate')
 parser.add_argument('--dataset_balancing',type=str,choices=['loss_weighting','oversampling'],default='loss_weighting',help='Choose method for correcting dataset imbalance.')
+parser.add_argument('--lr_scheduler',action='store_true',help='Use learning rate scheduler')
 
 args = parser.parse_args()
 
@@ -36,6 +37,7 @@ svp_path = args.svp_path
 fold_num = args.fold
 interp_resolution = args.resolution # Resnets expect a 224x224 image
 dataset_balancing_method = args.dataset_balancing
+use_lr_scheduler = args.lr_scheduler
 
 print(f'Run name: {args.run_name}')
 save_model_path = args.save_model_path
@@ -48,6 +50,10 @@ print(f'Learning rate: {learning_rate}')
 num_epochs = args.epochs
 print(f'Epochs: {num_epochs}')
 print(f'Dataset balancing method: {dataset_balancing_method}')
+if use_lr_scheduler:
+    print('Using learning rate scheduler')
+else:
+    print('Not using learning rate scheduler')
 
 pretrained = args.pretrained # Set this to True if you want to use the pretrained version
 # dropout = args.dropout # Note: The foundation model always has dropout
@@ -156,6 +162,7 @@ else:
     criterion = nn.BCEWithLogitsLoss()
 #initialize optimizer
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=2, gamma=0.5)
 
 with open(args.wandb_key,'r') as file:
     wandb_key = file.read().strip()
@@ -185,7 +192,7 @@ for i in range(0, num_epochs):
         best_auc = test_auc
         print(f'Saving model at epoch {i} with validation AUC of {best_auc}')
         torch.save(model.state_dict(), save_model_path)
-
+    scheduler.step() #decrease learning rate by factor of 2 every other epoch
     elapsed_time = time.time() - epoch_start_time
     print("Epoch " + str(i + 1) + " complete at " + str(elapsed_time) + " seconds")
 
