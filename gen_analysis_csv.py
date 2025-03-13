@@ -17,6 +17,7 @@ parser.add_argument('--base_path', type=str, required=True, help='path to parent
 parser.add_argument('--model', type=str,choices=['vgg11','resnet18','resnet34','resnet50'],required=True,help='Which model architecture to use')
 parser.add_argument('--model_weights', type=str,required=True,help='Path to trained model weights')
 parser.add_argument('--save_path', type=str,help='path to save dataset to',required=True)
+parser.add_argument('--all',action='store_true',help='Use all PIDs for analysis, rather than only test set')
 
 args = parser.parse_args()
 
@@ -77,8 +78,16 @@ def gen_analysis_df(pid_paths,label,df):
                     df.loc[len(df)] = [dcm_path,pid,date,series_desc,loc,time,score_sigmoid,label] 
     return df
 print("Generating analysis dataframe for SVPs")
-df = gen_analysis_df(test_svp_pids,1,df)
+if args.all:
+    print("Using all PIDs for analysis")
+    df = gen_analysis_df(svp_pids,1,df)
+else:
+    print("Using only test PIDs for analysis")
+    df = gen_analysis_df(test_svp_pids,1,df)
 print("Generating analysis dataframe for normals")
-df = gen_analysis_df(test_normal_pids,0,df)
+if args.all:
+    df = gen_analysis_df(normal_pids,0,df)
+else:
+    df = gen_analysis_df(test_normal_pids,0,df)
 print(f"Saving analysis dataframe to {args.save_path}")
 df.to_csv(args.save_path,index=False)
