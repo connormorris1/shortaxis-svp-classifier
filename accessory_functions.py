@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset
 import random
-from skimage.transform import rescale
+# from skimage.transform import rescale
 import numpy as np
 from torchvision import transforms
 from sklearn.metrics import roc_auc_score, precision_score, recall_score, accuracy_score
