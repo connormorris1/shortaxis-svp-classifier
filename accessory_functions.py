@@ -250,3 +250,36 @@ def test_loop(dataloader, model, loss_fn, device):
     wandb.log({'test_loss': test_loss,"test_acc":accuracy,"test_precision":precision,"test_recall":recall,"test_specificity":specificity,"test_auc":auc})
     return auc
        
+
+def gen_folds(normal_path,svp_path,return_full_paths=False):
+    normal_pids = [] #will be list of normal pids
+    for pid in os.listdir(normal_path):
+        if return_full_paths:
+            normal_pids.append(os.path.join(normal_path,pid))
+        else:
+            normal_pids.append(pid)
+    svp_pids = [] #will be list of svp pids
+    for pid in os.listdir(svp_path):
+        if return_full_paths:
+            svp_pids.append(os.path.join(svp_path,pid))
+        else:
+            svp_pids.append(pid)
+    random.seed(10)
+    test_svp_pids = random.sample(svp_pids,6) #each PID should be a full path to that PID directory
+    test_normal_pids = random.sample(normal_pids,9)
+    notest_normal_pids = list(set(normal_pids) - set(test_normal_pids))
+    notest_svp_pids = list(set(svp_pids) - set(test_svp_pids))
+    random.shuffle(notest_normal_pids)
+    random.shuffle(notest_svp_pids)
+    svp_folds = []
+    normal_folds = []
+    svp_fold_size = len(notest_svp_pids) // 4
+    normal_fold_size = len(notest_normal_pids) // 4
+    for i in range(4):
+        if i != 3:
+            svp_folds.append(notest_svp_pids[i*svp_fold_size:(i+1)*svp_fold_size])
+            normal_folds.append(notest_normal_pids[i*normal_fold_size:(i+1)*normal_fold_size])
+        elif i == 3:
+            svp_folds.append(notest_svp_pids[i*svp_fold_size:])
+            normal_folds.append(notest_normal_pids[i*normal_fold_size:])
+    return test_svp_pids, test_normal_pids, svp_folds, normal_folds
