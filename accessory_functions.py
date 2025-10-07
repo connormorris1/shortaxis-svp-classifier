@@ -98,10 +98,11 @@ def dicom_path_to_tensor(img_path,target_dim,train=True):
     # array = rescale(array, dicom.PixelSpacing,anti_aliasing=dicom.PixelSpacing[0] < 1)
     #center crop to target_dim x target_dim, with 0 padding if less
     array = array.astype(np.uint8)
+    array = np.stack((array,)*3, axis=-1) #convert to 3 channel by repeating grayscale values
     if train:
         transform = transforms.Compose([
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.1181772], std=[0.13326852023601532]),
+            transforms.Normalize(mean=[0.1181772]*3, std=[0.13326852023601532]*3),
             transforms.Pad((int(np.ceil(max(target_dim-array.shape[0],0)/2)),int(np.ceil(max(target_dim-array.shape[1],0)/2)))), #can add rotation/flipping here
             transforms.CenterCrop((target_dim,target_dim)),
             transforms.RandomRotation(degrees=(0,180)), #transforms copied from https://www.sciencedirect.com/science/article/pii/S1097664723003320?via%3Dihub, but instead of random transforms they did all permutations on each image
@@ -111,7 +112,7 @@ def dicom_path_to_tensor(img_path,target_dim,train=True):
     else: # remove data augmentation when testing
         transform = transforms.Compose([
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.1181772], std=[0.13326852023601532]),
+            transforms.Normalize(mean=[0.1181772]*3, std=[0.13326852023601532]*3),
             transforms.Pad((int(np.ceil(max(target_dim-array.shape[0],0)/2)),int(np.ceil(max(target_dim-array.shape[1],0)/2)))), #can add rotation/flipping here
             transforms.CenterCrop((target_dim,target_dim)),
         ])

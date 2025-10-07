@@ -27,6 +27,7 @@ parser.add_argument('--device',type=int,required=True,help='Cuda GPU ID')
 parser.add_argument('--learning_rate',type=float,default=0.0001,help='Sets learning rate')
 parser.add_argument('--dataset_balancing',type=str,choices=['loss_weighting','oversampling'],default='loss_weighting',help='Choose method for correcting dataset imbalance.')
 parser.add_argument('--lr_scheduler',action='store_true',help='Use learning rate scheduler')
+parser.add_argument('--freeze_encoder',action='store_true',help='Freeze encoder layers during training')
 
 args = parser.parse_args()
 
@@ -124,8 +125,8 @@ train_fold,train_fold_labels = zip(*paired_train_folds)
 train_fold = list(train_fold)
 train_fold_labels = list(train_fold_labels)
 
-train_dataloader = DataLoader(CustomImageDataset(train_fold, train_fold_labels, True, interp_resolution, oversample), batch_size=batch_num)
-val_dataloader = DataLoader(CustomImageDataset(val_fold, val_fold_labels, False, interp_resolution, False), batch_size=batch_num)
+train_dataloader = DataLoader(CustomImageDataset(train_fold, train_fold_labels, True, interp_resolution, oversample), batch_size=batch_num, num_workers=2)
+val_dataloader = DataLoader(CustomImageDataset(val_fold, val_fold_labels, False, interp_resolution, False), batch_size=batch_num, num_workers=2)
 
 # Uses GPU or Mac backend if available, otherwise use CPU
 # This code obtained from official pytorch docs
@@ -147,6 +148,14 @@ elif architecture == 'resnet50':
     model = resnet50(pretrained=pretrained)
 elif architecture == 'vgg11':
     model = vgg11(pretrained=pretrained)
+
+if args.freeze_encoder:
+    print('Freezing encoder layers during training')
+    for name, param in model.named_parameters():
+        if not name.startswith("fc"):
+            param.requires_grad = False
+        else:
+            print("Training layer: " + name)
 
 #move model to GPU
 model = model.to(device)
