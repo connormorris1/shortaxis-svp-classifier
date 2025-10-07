@@ -2,15 +2,45 @@ import pandas as pd
 from pydicom import dcmread
 import models
 import torch
-from accessory_functions import dicom_path_to_tensor
+# from accessory_functions import dicom_path_to_tensor
 import random
 import os
 import argparse
+from torchvision import transforms
+import numpy as np
 
 #read in test dataset
 #extract z-axis, time, PID
 #calculate model scores
 #save score dfs
+
+def dicom_path_to_tensor(img_path,target_dim,train=True):
+    # Load image dicom and pre-process into tensor for input into model
+    dicom = dcmread(img_path)
+    array = dicom.pixel_array
+    #rescale to 1mmx1mm pixel size - not working currently
+    # array = rescale(array, dicom.PixelSpacing,anti_aliasing=dicom.PixelSpacing[0] < 1)
+    #center crop to target_dim x target_dim, with 0 padding if less
+    array = array.astype(np.uint8)
+    if train:
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.1181772], std=[0.13326852023601532]),
+            transforms.Pad((int(np.ceil(max(target_dim-array.shape[0],0)/2)),int(np.ceil(max(target_dim-array.shape[1],0)/2)))), #can add rotation/flipping here
+            transforms.CenterCrop((target_dim,target_dim)),
+            transforms.RandomRotation(degrees=(0,180)), #transforms copied from https://www.sciencedirect.com/science/article/pii/S1097664723003320?via%3Dihub, but instead of random transforms they did all permutations on each image
+            transforms.RandomHorizontalFlip(p=0.5),
+            transforms.RandomVerticalFlip(p=0.5)
+        ])
+    else: # remove data augmentation when testing
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.1181772], std=[0.13326852023601532]),
+            transforms.Pad((int(np.ceil(max(target_dim-array.shape[0],0)/2)),int(np.ceil(max(target_dim-array.shape[1],0)/2)))), #can add rotation/flipping here
+            transforms.CenterCrop((target_dim,target_dim)),
+        ])
+    array = transform(array)
+    return array
 
 parser = argparse.ArgumentParser(description='Generate CSVs to further analyze data')
 parser.add_argument('--base_path', type=str, required=True, help='path to parent directory of dataset')
@@ -31,7 +61,7 @@ elif args.model == 'resnet50':
     model = models.resnet50()
 elif args.model == 'vgg11':
     model = models.vgg11()
-model.load_state_dict(torch.load(args.model_weights))
+model.load_state_dict(torch.load(args.model_weights,map_location=torch.device('cpu')))
 model.eval()
 
 #extract test set PID paths
