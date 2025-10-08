@@ -5,7 +5,7 @@ import pandas as pd
 import time
 import wandb
 import argparse
-from accessory_functions import CustomImageDataset, train_loop, test_loop
+from accessory_functions import IndividualSlicesDataset, train_loop, test_loop
 from models import resnet18, resnet34, resnet50, vgg11
 import random
 import os
@@ -125,8 +125,8 @@ train_fold,train_fold_labels = zip(*paired_train_folds)
 train_fold = list(train_fold)
 train_fold_labels = list(train_fold_labels)
 
-train_dataloader = DataLoader(CustomImageDataset(train_fold, train_fold_labels, True, interp_resolution, oversample), batch_size=batch_num, num_workers=2)
-val_dataloader = DataLoader(CustomImageDataset(val_fold, val_fold_labels, False, interp_resolution, False), batch_size=batch_num, num_workers=2)
+train_dataloader = DataLoader(IndividualSlicesDataset(train_fold, train_fold_labels, True, interp_resolution, oversample), batch_size=batch_num, num_workers=2)
+val_dataloader = DataLoader(IndividualSlicesDataset(val_fold, val_fold_labels, False, interp_resolution, False), batch_size=batch_num, num_workers=2)
 
 # Uses GPU or Mac backend if available, otherwise use CPU
 # This code obtained from official pytorch docs

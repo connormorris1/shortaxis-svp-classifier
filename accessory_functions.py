@@ -121,7 +121,7 @@ def dicom_path_to_tensor(img_path,target_dim,train=True):
 
 
 # Based on tutorial from PyTorch website https://pytorch.org/tutorials/beginner/basics/data_tutorial.html
-class CustomImageDataset(Dataset):
+class IndividualSlicesDataset(Dataset):
     # directory structure is: 
     # label
     # ---pid
